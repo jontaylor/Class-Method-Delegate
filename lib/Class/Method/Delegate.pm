@@ -1,4 +1,4 @@
-package Class::Method::Delegate;
+package Class::Method::Delegate; our $VERSION = '0.01';
 
 use 5.010000;
 use strict;
@@ -32,7 +32,9 @@ sub delegate {
     *{"${class}::$method_name"} = sub {
       my $self = shift;
       my $delegation_object = &$object($self);
+      print STDERR "Checking if the object has a delegated_by method\n\n";
       if($delegation_object->can('delegated_by')) {
+        print STDERR "The object has a delegated_by method\n\n";
         $delegation_object->delegated_by($self);
       }
       $delegation_object->$method_name(@_);

@@ -8,7 +8,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 1;
+use Test::More;
 BEGIN { use_ok('Class::Method::Delegate') };
 
 #########################
@@ -16,3 +16,51 @@ BEGIN { use_ok('Class::Method::Delegate') };
 # Insert your test code below, the Test::More module is use()ed here so read
 # its man page ( perldoc Test::More ) for help writing this test script.
 
+FROM: {
+  package DaisyMojo::TestObjects::test_package_to_delegate_from;
+  use Mojo::Base -base;
+  use DaisyMojo::Delegator;
+  use DaisyMojo::TestObjects::test_package_to_delegate_to;
+
+  delegate methods => [ 'simple_string', 'with_attributes', 'return_myself' ], to => sub { DaisyMojo::TestObjects::test_package_to_delegate_to->new() };
+
+}
+
+TO: {
+  package DaisyMojo::TestObjects::test_package_to_delegate_to;
+  use Mojo::Base -base;
+
+  sub simple_string {
+    return "simple_string returned a string";
+  }
+
+  sub with_attributes {
+    my $self = shift;
+
+    return @_;
+  }
+
+  sub delegated_by {
+    my $self = shift;
+    if(@_) {
+        $self->{delegated_by} = shift;
+    }
+    return $self->{delegated_by};
+  }
+
+  sub return_myself {
+    return shift;
+  }  
+}
+
+ok my $test_package_to_delegate_from = DaisyMojo::TestObjects::test_package_to_delegate_from->new();
+
+is( $test_package_to_delegate_from->simple_string(), "simple_string returned a string");
+ok my @response = $test_package_to_delegate_from->with_attributes(1,2,3,5);
+is( $response[0], 1);
+is( $response[1], 2);
+is( $response[2], 3);
+is( $response[3], 5);
+is( $test_package_to_delegate_from->return_myself()->delegated_by(), $test_package_to_delegate_from);
+
+done_testing();
