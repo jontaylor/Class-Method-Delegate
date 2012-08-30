@@ -17,18 +17,23 @@ BEGIN { use_ok('Class::Method::Delegate') };
 # its man page ( perldoc Test::More ) for help writing this test script.
 
 FROM: {
-  package DaisyMojo::TestObjects::test_package_to_delegate_from;
-  use Mojo::Base -base;
-  use DaisyMojo::Delegator;
-  use DaisyMojo::TestObjects::test_package_to_delegate_to;
+  package test_package_to_delegate_from;
+  use Class::Method::Delegate;
 
-  delegate methods => [ 'simple_string', 'with_attributes', 'return_myself' ], to => sub { DaisyMojo::TestObjects::test_package_to_delegate_to->new() };
+  sub new {
+    return bless {}, shift;
+  }
+
+  delegate methods => [ 'simple_string', 'with_attributes', 'return_myself' ], to => sub { test_package_to_delegate_to->new() };
 
 }
 
 TO: {
-  package DaisyMojo::TestObjects::test_package_to_delegate_to;
-  use Mojo::Base -base;
+  package test_package_to_delegate_to;
+
+  sub new {
+    return bless {}, shift;
+  }
 
   sub simple_string {
     return "simple_string returned a string";
@@ -53,7 +58,7 @@ TO: {
   }  
 }
 
-ok my $test_package_to_delegate_from = DaisyMojo::TestObjects::test_package_to_delegate_from->new();
+ok my $test_package_to_delegate_from = test_package_to_delegate_from->new();
 
 is( $test_package_to_delegate_from->simple_string(), "simple_string returned a string");
 ok my @response = $test_package_to_delegate_from->with_attributes(1,2,3,5);
