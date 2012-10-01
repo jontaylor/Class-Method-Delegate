@@ -4,8 +4,9 @@ use 5.010000;
 use strict;
 use warnings;
 use Carp;
+use Scalar::Util qw(blessed);
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub import {
   my $class = shift;
@@ -34,6 +35,7 @@ sub delegate {
     *{"${class}::$method_name"} = sub {
       my $self = shift;
       my $delegation_object = &$object($self);
+      croak "You are trying to delegate to something that is not an object" unless blessed( $delegation_object );
       if($delegation_object->can('delegated_by')) {
         $delegation_object->delegated_by($self);
       }
