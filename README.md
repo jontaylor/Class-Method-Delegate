@@ -10,7 +10,9 @@ Synopsis
     use Package::To::Delegate::To;
     delegate methods => [ 'hello', 'goodbye' ], to => sub { Package::To::Delegate::To->new() };
     delegate methods => [ 'wave' ], to => sub { shift->{gestures} };
-    delegate methods => [ 'walk', 'run' ], to => sub { self->{movements} ||= Package::To::Delegate::To->new() };
+    delegate methods => [ 'walk', 'run' ], to => sub { shift->{movements} ||= Package::To::Delegate::To->new() };
+
+    delegate methods => [ 'walk', 'run' ], to => \&some_subroutine, handlers => [ 'slow', 'fast' ];
 
 Description
 -----------

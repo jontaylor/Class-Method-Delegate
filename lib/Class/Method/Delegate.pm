@@ -1,4 +1,4 @@
-package Class::Method::Delegate; 
+package Class::Method::Delegate;
 
 use 5.010000;
 use strict;
@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use Scalar::Util qw(blessed);
 
-our $VERSION = '0.02';
+our $VERSION = '1.03';
 
 sub import {
   my $class = shift;
@@ -22,24 +22,50 @@ sub import {
 sub delegate {
   my $class = shift;
   my $options = @_ ? @_ > 1 ? {@_} : {%{$_[0]}} : {};
+  my ($methods, $object, $handlers);
 
-  my $methods = $options->{'methods'};
-  my $object = $options->{'to'};
-
-  croak "Can't delegate without method" unless $methods;
-  croak "Can't delegate without an object" unless $object;
+  if (exists $options->{'methods'}) {
+    $methods = $options->{'methods'};
+    croak 'methods undefined' unless $methods;
+    croak 'methods not arrayref' unless ref($methods) eq 'ARRAY';
+    croak 'methods empty' if 0 == @$methods;
+  } else {
+    croak "Can't delegate without methods";
+  }
+  if (exists $options->{'to'}) {
+      $object = $options->{'to'};
+      croak 'to undefined' unless $object;
+      croak 'to not coderef' unless ref($object) eq 'CODE';
+  } else {
+      croak "Can't delegate without an object";
+  }
+  if (exists $options->{'class'}) {
+    $class = $options->{'class'};
+    croak 'class undefined or empty' unless $class;
+  }
+  if (exists $options->{'handlers'}) {
+      $handlers = $options->{'handlers'};
+      croak 'handlers undefined' unless $handlers;
+      croak 'handlers not arrayref' unless ref($handlers) eq 'ARRAY';
+      croak 'too few handlers' if @$handlers < @$methods;
+      croak 'too many handlers' if @$handlers > @$methods;
+  } else {
+      $handlers = $methods;
+  }
 
   no strict 'refs';
   #Inject a method 
-  foreach my $method_name(@$methods) {
-    *{"${class}::$method_name"} = sub {
+  my $i = 0;
+  for my $method (@$methods) {
+    my $handler = $handlers->[$i++];
+    *{"${class}::$method"} = sub {
       my $self = shift;
       my $delegation_object = &$object($self);
       croak "You are trying to delegate to something that is not an object" unless blessed( $delegation_object );
       if($delegation_object->can('delegated_by')) {
         $delegation_object->delegated_by($self);
       }
-      $delegation_object->$method_name(@_);
+      $delegation_object->$handler(@_);
     }
   }
   strict->import;
@@ -59,6 +85,8 @@ Class::Method::Delegate - Perl extension to help you add delegation to your clas
   delegate methods => [ 'hello', 'goodbye' ], to => sub { Package::To::Delegate::To->new() };
   delegate methods => [ 'wave' ], to => sub { shift->{gestures} };
   delegate methods => [ 'walk', 'run' ], to => sub { self->{movements} ||= Package::To::Delegate::To->new() };
+
+  delegate methods => [ 'walk', 'run' ], to => \&some_subroutine, handlers => [ 'slow', 'fast' ];
 
 =head1 DESCRIPTION
 
@@ -90,6 +118,8 @@ Check out Class:Delegator and Class::Delegation for alternatives.
 =head1 AUTHOR
 
 Jonathan Taylor, E<lt>jon@stackhaus.comE<gt>
+
+Version 1.03 contributed by James Buster
 
 =head1 COPYRIGHT AND LICENSE
 
